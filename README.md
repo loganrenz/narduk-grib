@@ -104,10 +104,12 @@ narduk-grib/
 │   └── README.md           # Backend documentation
 ├── frontend/               # Vue Nuxt 3 frontend
 │   ├── app/               # Application root
+│   │   ├── app.vue        # Root component
+│   │   ├── components/    # Vue components
+│   │   ├── composables/   # Vue composables
+│   │   └── pages/         # Application pages
 │   ├── assets/            # Static assets and styles
-│   ├── components/        # Vue components
-│   ├── composables/       # Vue composables
-│   ├── pages/             # Application pages
+│   ├── public/            # Public static files
 │   ├── nuxt.config.ts     # Nuxt configuration
 │   └── README.md          # Frontend documentation
 └── README.md              # This file

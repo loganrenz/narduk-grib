@@ -59,18 +59,18 @@ npm run preview
 ```
 frontend/
 ├── app/
-│   └── app.vue           # Root application component
+│   ├── app.vue           # Root application component
+│   ├── components/       # Vue components
+│   │   ├── FileUpload.vue    # File upload component
+│   │   ├── FileList.vue      # File list component
+│   │   └── GribViewer.vue    # GRIB data viewer component
+│   ├── composables/      # Vue composables
+│   │   └── useGribApi.ts     # API interaction composable
+│   └── pages/            # Application pages
+│       └── index.vue         # Main page
 ├── assets/
 │   └── css/
 │       └── main.css      # Global styles and Tailwind imports
-├── components/
-│   ├── FileUpload.vue    # File upload component
-│   ├── FileList.vue      # File list component
-│   └── GribViewer.vue    # GRIB data viewer component
-├── composables/
-│   └── useGribApi.ts     # API interaction composable
-├── pages/
-│   └── index.vue         # Main page
 ├── public/               # Static assets
 ├── nuxt.config.ts        # Nuxt configuration
 └── package.json          # Dependencies
