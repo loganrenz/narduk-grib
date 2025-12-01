@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 class GRIBService:
     """Service for handling GRIB file operations."""
     
+    # Supported GRIB file extensions
+    GRIB_EXTENSIONS = ['.grib', '.grib2', '.grb', '.grb2', '.nc']
+    
     def __init__(self, storage_path: Path):
         """
         Initialize the GRIB service.
@@ -227,8 +230,7 @@ class GRIBService:
             raise FileNotFoundError(f"File with ID {file_id} not found")
         
         # Prioritize GRIB files over index files (.idx)
-        grib_extensions = ['.grib', '.grib2', '.grb', '.grb2', '.nc']
-        grib_files = [f for f in matching_files if f.suffix in grib_extensions]
+        grib_files = [f for f in matching_files if f.suffix in self.GRIB_EXTENSIONS]
         
         if grib_files:
             return grib_files[0]
@@ -248,7 +250,7 @@ class GRIBService:
         file_path = self._find_file(file_id)
         
         # Determine the engine based on file extension
-        engine = 'cfgrib' if file_path.suffix in ['.grib', '.grib2', '.grb', '.grb2'] else None
+        engine = 'cfgrib' if file_path.suffix in self.GRIB_EXTENSIONS and file_path.suffix != '.nc' else None
         
         # Open file with appropriate engine
         ds = xr.open_dataset(file_path, engine=engine)
@@ -286,7 +288,7 @@ class GRIBService:
         file_path = self._find_file(file_id)
         
         # Determine the engine based on file extension
-        engine = 'cfgrib' if file_path.suffix in ['.grib', '.grib2', '.grb', '.grb2'] else None
+        engine = 'cfgrib' if file_path.suffix in self.GRIB_EXTENSIONS and file_path.suffix != '.nc' else None
         
         # Open file with appropriate engine
         ds = xr.open_dataset(file_path, engine=engine)
