@@ -240,8 +240,11 @@ class GRIBService:
         """
         file_path = self._find_file(file_id)
         
-        # Open GRIB file with cfgrib
-        ds = xr.open_dataset(file_path, engine='cfgrib')
+        # Determine the engine based on file extension
+        engine = 'cfgrib' if file_path.suffix in ['.grib', '.grib2', '.grb', '.grb2'] else None
+        
+        # Open file with appropriate engine
+        ds = xr.open_dataset(file_path, engine=engine)
         
         metadata = {
             "variables": list(ds.data_vars.keys()),
@@ -275,8 +278,11 @@ class GRIBService:
         """
         file_path = self._find_file(file_id)
         
-        # Open GRIB file with cfgrib
-        ds = xr.open_dataset(file_path, engine='cfgrib')
+        # Determine the engine based on file extension
+        engine = 'cfgrib' if file_path.suffix in ['.grib', '.grib2', '.grb', '.grb2'] else None
+        
+        # Open file with appropriate engine
+        ds = xr.open_dataset(file_path, engine=engine)
         
         # Get metadata
         variables = list(ds.data_vars.keys())
