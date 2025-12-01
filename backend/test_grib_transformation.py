@@ -58,14 +58,23 @@ def sample_grib_dataset():
 
 @pytest.fixture
 def sample_grib_file(sample_grib_dataset):
-    """Create a temporary GRIB file for testing."""
+    """
+    Create a temporary file for testing GRIB transformation.
+    
+    Note: This fixture creates NetCDF files instead of actual GRIB files because:
+    1. Creating valid GRIB2 files programmatically requires complex binary encoding
+    2. The grib_service has been enhanced to auto-detect file format (GRIB vs NetCDF)
+    3. xarray can read both formats with the appropriate engine
+    4. The transformation logic being tested (data extraction, JSON conversion, etc.)
+       is format-agnostic after xarray parsing
+    
+    This approach allows testing the transformation pipeline while avoiding
+    the complexity of GRIB2 binary file generation. Integration tests with
+    real GRIB files are covered in test_grib_downloads.py.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         file_id = str(uuid.uuid4())
         file_path = Path(tmpdir) / f"{file_id}.nc"
-        
-        # For testing, we'll use a netCDF file since cfgrib requires actual GRIB format
-        # In a real scenario, this would be an actual GRIB file
-        # For now, save as netCDF which xarray can read
         sample_grib_dataset.to_netcdf(file_path)
         
         yield file_id, file_path

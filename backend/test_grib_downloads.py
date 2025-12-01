@@ -36,14 +36,23 @@ class TestPublicGRIBDownloads:
         Test downloading GFS (Global Forecast System) sample data.
         GFS is a global weather model from NOAA.
         
-        Note: This test uses NOAA's latest GFS data from NOMADS.
+        Note: This test attempts multiple GFS sources and gracefully skips if unavailable.
+        Integration tests for live weather data are expected to occasionally fail due to
+        data availability, server maintenance, or date-specific URLs becoming stale.
         """
-        # Try to download from NOAA NOMADS - latest available data
-        # Using a smaller subset file for faster testing
+        from datetime import datetime, timedelta
+        
+        # Calculate recent dates to try
+        today = datetime.utcnow()
+        yesterday = today - timedelta(days=1)
+        
+        # Try to download from NOAA NOMADS - try multiple recent dates
         sample_urls = [
-            # Try latest available GFS data
-            "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?dir=%2Fgfs.20241201%2F00%2Fatmos&file=gfs.t00z.pgrb2.0p25.f000&var_TMP=on&lev_2_m_above_ground=on",
-            # Alternative: use NOAA's sample/test data
+            # Try today's 00Z run (filtered to be small)
+            f"https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?dir=%2Fgfs.{today.strftime('%Y%m%d')}%2F00%2Fatmos&file=gfs.t00z.pgrb2.0p25.f000&var_TMP=on&lev_2_m_above_ground=on",
+            # Try yesterday's 00Z run
+            f"https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?dir=%2Fgfs.{yesterday.strftime('%Y%m%d')}%2F00%2Fatmos&file=gfs.t00z.pgrb2.0p25.f000&var_TMP=on&lev_2_m_above_ground=on",
+            # Alternative: use NOAA's archived sample data (stable but older)
             "https://www.ncei.noaa.gov/thredds/fileServer/model-gfs-g4-anl-files-old/202001/20200101/gfsanl_4_20200101_0000_000.grb2",
         ]
         
@@ -65,7 +74,8 @@ class TestPublicGRIBDownloads:
                 continue
         
         # If all URLs failed, skip the test
-        pytest.skip(f"GFS sample file not available from any source: {str(last_error)}")
+        # This is expected behavior for integration tests with live data sources
+        pytest.skip(f"GFS data not currently available from any source: {str(last_error)}")
     
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -74,22 +84,32 @@ class TestPublicGRIBDownloads:
         Test downloading NAM (North American Mesoscale) sample data.
         NAM is a regional weather model covering North America.
         
-        Note: Requires access to NOAA's data servers.
+        Note: This test uses dynamic date calculation to avoid stale URLs.
+        Integration tests may skip if data is temporarily unavailable.
         """
-        # NAM sample URL (12km resolution)
-        sample_url = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/nam/prod/nam.20240101/nam.t00z.awphys00.tm00.grib2"
+        from datetime import datetime, timedelta
         
-        try:
-            file_info = await grib_service.download_file(sample_url)
+        # Try recent dates
+        today = datetime.utcnow()
+        dates_to_try = [today - timedelta(days=i) for i in range(3)]
+        
+        for date in dates_to_try:
+            sample_url = f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/nam/prod/nam.{date.strftime('%Y%m%d')}/nam.t00z.awphys00.tm00.grib2"
             
-            assert file_info is not None
-            assert file_info.id is not None
-            assert file_info.size > 0
-            
-            # Clean up
-            await grib_service.delete_file(file_info.id)
-        except Exception as e:
-            pytest.skip(f"NAM sample file not available: {str(e)}")
+            try:
+                file_info = await grib_service.download_file(sample_url)
+                
+                assert file_info is not None
+                assert file_info.id is not None
+                assert file_info.size > 0
+                
+                # Clean up
+                await grib_service.delete_file(file_info.id)
+                return  # Success
+            except Exception:
+                continue  # Try next date
+        
+        pytest.skip("NAM data not currently available")
     
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -98,22 +118,32 @@ class TestPublicGRIBDownloads:
         Test downloading HRRR (High Resolution Rapid Refresh) sample data.
         HRRR provides high-resolution forecasts for the continental US.
         
-        Note: Requires access to NOAA's data servers.
+        Note: This test uses dynamic date calculation to avoid stale URLs.
+        Integration tests may skip if data is temporarily unavailable.
         """
-        # HRRR sample URL
-        sample_url = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/hrrr.20240101/conus/hrrr.t00z.wrfsfcf00.grib2"
+        from datetime import datetime, timedelta
         
-        try:
-            file_info = await grib_service.download_file(sample_url)
+        # Try recent dates
+        today = datetime.utcnow()
+        dates_to_try = [today - timedelta(days=i) for i in range(3)]
+        
+        for date in dates_to_try:
+            sample_url = f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/hrrr.{date.strftime('%Y%m%d')}/conus/hrrr.t00z.wrfsfcf00.grib2"
             
-            assert file_info is not None
-            assert file_info.id is not None
-            assert file_info.size > 0
-            
-            # Clean up
-            await grib_service.delete_file(file_info.id)
-        except Exception as e:
-            pytest.skip(f"HRRR sample file not available: {str(e)}")
+            try:
+                file_info = await grib_service.download_file(sample_url)
+                
+                assert file_info is not None
+                assert file_info.id is not None
+                assert file_info.size > 0
+                
+                # Clean up
+                await grib_service.delete_file(file_info.id)
+                return  # Success
+            except Exception:
+                continue  # Try next date
+        
+        pytest.skip("HRRR data not currently available")
     
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -122,22 +152,32 @@ class TestPublicGRIBDownloads:
         Test downloading RAP (Rapid Refresh) sample data.
         RAP provides frequent updates for North America.
         
-        Note: Requires access to NOAA's data servers.
+        Note: This test uses dynamic date calculation to avoid stale URLs.
+        Integration tests may skip if data is temporarily unavailable.
         """
-        # RAP sample URL
-        sample_url = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod/rap.20240101/rap.t00z.awp130pgrbf00.grib2"
+        from datetime import datetime, timedelta
         
-        try:
-            file_info = await grib_service.download_file(sample_url)
+        # Try recent dates
+        today = datetime.utcnow()
+        dates_to_try = [today - timedelta(days=i) for i in range(3)]
+        
+        for date in dates_to_try:
+            sample_url = f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod/rap.{date.strftime('%Y%m%d')}/rap.t00z.awp130pgrbf00.grib2"
             
-            assert file_info is not None
-            assert file_info.id is not None
-            assert file_info.size > 0
-            
-            # Clean up
-            await grib_service.delete_file(file_info.id)
-        except Exception as e:
-            pytest.skip(f"RAP sample file not available: {str(e)}")
+            try:
+                file_info = await grib_service.download_file(sample_url)
+                
+                assert file_info is not None
+                assert file_info.id is not None
+                assert file_info.size > 0
+                
+                # Clean up
+                await grib_service.delete_file(file_info.id)
+                return  # Success
+            except Exception:
+                continue  # Try next date
+        
+        pytest.skip("RAP data not currently available")
     
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -146,22 +186,34 @@ class TestPublicGRIBDownloads:
         Test downloading GDPS (Global Deterministic Prediction System) sample data.
         GDPS is Canada's global weather model from CMC.
         
-        Note: Requires access to CMC's data servers.
+        Note: This test uses dynamic date calculation to avoid stale URLs.
+        Integration tests may skip if data is temporarily unavailable.
         """
-        # CMC GDPS sample URL
-        sample_url = "https://dd.weather.gc.ca/model_gem_global/15km/grib2/lat_lon/00/000/CMC_glb_TMP_TGL_2_latlon.15x.15_2024010100_P000.grib2"
+        from datetime import datetime, timedelta
         
-        try:
-            file_info = await grib_service.download_file(sample_url)
+        # Try recent dates - CMC format is YYYYMMDDHH
+        today = datetime.utcnow()
+        dates_to_try = [today - timedelta(days=i) for i in range(3)]
+        
+        for date in dates_to_try:
+            # CMC runs at 00Z and 12Z typically
+            date_str = date.strftime('%Y%m%d') + "00"
+            sample_url = f"https://dd.weather.gc.ca/model_gem_global/15km/grib2/lat_lon/00/000/CMC_glb_TMP_TGL_2_latlon.15x.15_{date_str}_P000.grib2"
             
-            assert file_info is not None
-            assert file_info.id is not None
-            assert file_info.size > 0
-            
-            # Clean up
-            await grib_service.delete_file(file_info.id)
-        except Exception as e:
-            pytest.skip(f"GDPS sample file not available: {str(e)}")
+            try:
+                file_info = await grib_service.download_file(sample_url)
+                
+                assert file_info is not None
+                assert file_info.id is not None
+                assert file_info.size > 0
+                
+                # Clean up
+                await grib_service.delete_file(file_info.id)
+                return  # Success
+            except Exception:
+                continue  # Try next date
+        
+        pytest.skip("GDPS data not currently available")
 
 
 class TestAuthenticatedGRIBDownloads:
