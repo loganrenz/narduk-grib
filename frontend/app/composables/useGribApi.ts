@@ -3,14 +3,16 @@
  */
 export const useGribApi = () => {
   const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase
+  const apiBase = config.public.apiBase || ''
+  // If apiBase is empty, use relative paths (starts with /). Otherwise use the provided base URL.
+  const baseUrl = apiBase ? (apiBase.endsWith('/') ? apiBase : `${apiBase}/`) : '/'
 
   /**
    * List all GRIB files
    */
   const listFiles = async () => {
     try {
-      const response = await $fetch(`${apiBase}/api/grib/files`)
+      const response = await $fetch(`${baseUrl}api/grib/files`)
       return response
     } catch (error) {
       console.error('Error listing GRIB files:', error)
@@ -26,7 +28,7 @@ export const useGribApi = () => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await $fetch(`${apiBase}/api/grib/upload`, {
+      const response = await $fetch(`${baseUrl}api/grib/upload`, {
         method: 'POST',
         body: formData
       })
@@ -42,7 +44,7 @@ export const useGribApi = () => {
    */
   const downloadFile = async (url: string) => {
     try {
-      const response = await $fetch(`${apiBase}/api/grib/download`, {
+      const response = await $fetch(`${baseUrl}api/grib/download`, {
         params: { url }
       })
       return response
@@ -61,7 +63,7 @@ export const useGribApi = () => {
       if (variable) params.variable = variable
       if (level !== undefined) params.level = level
 
-      const response = await $fetch(`${apiBase}/api/grib/data/${fileId}`, {
+      const response = await $fetch(`${baseUrl}api/grib/data/${fileId}`, {
         params
       })
       return response
@@ -76,7 +78,7 @@ export const useGribApi = () => {
    */
   const getMetadata = async (fileId: string) => {
     try {
-      const response = await $fetch(`${apiBase}/api/grib/metadata/${fileId}`)
+      const response = await $fetch(`${baseUrl}api/grib/metadata/${fileId}`)
       return response
     } catch (error) {
       console.error('Error getting GRIB metadata:', error)
@@ -89,7 +91,7 @@ export const useGribApi = () => {
    */
   const deleteFile = async (fileId: string) => {
     try {
-      const response = await $fetch(`${apiBase}/api/grib/files/${fileId}`, {
+      const response = await $fetch(`${baseUrl}api/grib/files/${fileId}`, {
         method: 'DELETE'
       })
       return response

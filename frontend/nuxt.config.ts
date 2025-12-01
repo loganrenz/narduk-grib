@@ -5,9 +5,12 @@ export default defineNuxtConfig({
   
   modules: ['@nuxtjs/tailwindcss'],
   
+  ssr: false, // Disable SSR for static generation
+  
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000',
+      // Use empty string for production (same origin), localhost for development
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000'),
       mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN || '',
       mapkitToken: process.env.NUXT_PUBLIC_MAPKIT_TOKEN || ''
     }
