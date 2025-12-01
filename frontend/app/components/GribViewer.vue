@@ -133,7 +133,10 @@ const loadData = async () => {
   error.value = ''
 
   try {
-    const data = await getGribData(props.fileId, selectedVariable.value || undefined)
+    const data = await getGribData(
+      props.fileId, 
+      selectedVariable.value ? selectedVariable.value : undefined
+    )
     gribData.value = data as GRIBData
     
     // Set default variable if not selected

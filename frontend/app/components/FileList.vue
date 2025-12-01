@@ -128,11 +128,13 @@ const confirmDelete = (fileId: string) => {
 const deleteFile = async () => {
   if (!deleteConfirmId.value) return
 
+  const fileIdToDelete = deleteConfirmId.value
+  
   try {
-    await apiDeleteFile(deleteConfirmId.value)
+    await apiDeleteFile(fileIdToDelete)
     await loadFiles()
     deleteConfirmId.value = null
-    if (selectedFileId.value === deleteConfirmId.value) {
+    if (selectedFileId.value === fileIdToDelete) {
       selectedFileId.value = null
     }
   } catch (e: any) {
