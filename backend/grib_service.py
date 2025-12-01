@@ -226,6 +226,13 @@ class GRIBService:
         if not matching_files:
             raise FileNotFoundError(f"File with ID {file_id} not found")
         
+        # Prioritize GRIB files over index files (.idx)
+        grib_extensions = ['.grib', '.grib2', '.grb', '.grb2', '.nc']
+        grib_files = [f for f in matching_files if f.suffix in grib_extensions]
+        
+        if grib_files:
+            return grib_files[0]
+        
         return matching_files[0]
     
     async def get_metadata(self, file_id: str) -> Dict[str, Any]:

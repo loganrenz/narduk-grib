@@ -1,0 +1,11 @@
+# Ignore large GRIB files (download locally as needed)
+*.grib2
+*.grb2
+*.grb
+*.grib
+
+# But keep the small GFS sample
+!gfs_sample.grib2
+
+# Ignore index files created by cfgrib
+*.idx
