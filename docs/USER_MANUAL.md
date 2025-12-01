@@ -303,6 +303,45 @@ For issues, questions, or contributions:
    - Expected vs actual behavior
    - Screenshots if applicable
 
+## Advanced Features
+
+### Timeline Scrubber
+
+For GRIB files with multiple time steps (forecast hours), the timeline scrubber provides:
+- Interactive slider to navigate between time steps
+- Play/pause animation controls
+- Speed adjustment (0.5x, 1x, 2x)
+- Current time and forecast hour display
+- Automatic cycling through forecast times
+
+**See [TIMELINE_SCRUBBER_GUIDE.md](TIMELINE_SCRUBBER_GUIDE.md) for comprehensive documentation with examples.**
+
+### Wind Barbs Visualization
+
+For wind data (u/v components), wind barbs show:
+- Wind direction (staff points FROM wind origin)
+- Wind speed (barbs and pennants)
+- Color-coded wind intensity
+- Standard meteorological notation
+
+**Key Features:**
+- Toggle between Points and Wind Barbs
+- Click barbs for exact wind values
+- Color scale from light blue (calm) to red (strong)
+- Professional meteorological symbols
+
+**See [TIMELINE_SCRUBBER_GUIDE.md](TIMELINE_SCRUBBER_GUIDE.md) for detailed wind barb interpretation.**
+
+### Enhanced Color Scales
+
+The map uses meteorologically appropriate color scales:
+
+**Temperature**: Blue → Cyan → Green → Yellow → Orange → Red  
+**Wind Speed**: Light Blue → Blue → Dark Blue  
+**Pressure**: Purple → White → Orange
+
+Each variable type gets an optimized color progression for easy interpretation.
+
 ## Appendix: Supported GRIB Models
 
 The application supports GRIB files from all major weather model sources:
