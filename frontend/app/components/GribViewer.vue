@@ -71,21 +71,8 @@
         </div>
       </div>
 
-      <!-- Data Visualization Placeholder -->
-      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
-        <h3 class="font-semibold mb-4 text-center">Data Visualization</h3>
-        <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg h-64 flex items-center justify-center">
-          <div class="text-center text-gray-700">
-            <svg class="w-16 h-16 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <p class="text-sm">Map visualization would appear here</p>
-            <p class="text-xs text-gray-500 mt-1">
-              {{ Object.keys(gribData.data).length }} data points loaded
-            </p>
-          </div>
-        </div>
-      </div>
+      <!-- Map Visualization -->
+      <MapViewer :gribData="gribData" />
 
       <!-- Metadata -->
       <div v-if="gribData.metadata?.attributes" class="bg-gray-50 rounded-lg p-4">

@@ -7,7 +7,9 @@ export default defineNuxtConfig({
   
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000',
+      mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN || '',
+      mapkitToken: process.env.NUXT_PUBLIC_MAPKIT_TOKEN || ''
     }
   },
   

@@ -11,7 +11,8 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional, Any
-from fastapi import UploadFile
+from urllib.parse import urlparse
+from fastapi import UploadFile, HTTPException
 import logging
 
 from models import GRIBFileInfo, GRIBDataResponse
@@ -85,6 +86,61 @@ class GRIBService:
             path=str(file_path)
         )
     
+    def _validate_url(self, url: str) -> None:
+        """
+        Validate URL to prevent SSRF attacks.
+        
+        Args:
+            url: URL to validate
+            
+        Raises:
+            HTTPException: If URL is invalid or points to internal resources
+        """
+        try:
+            parsed = urlparse(url)
+            
+            # Only allow http and https schemes
+            if parsed.scheme not in ('http', 'https'):
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Only HTTP and HTTPS URLs are allowed"
+                )
+            
+            # Block common internal/private IP ranges and localhost
+            hostname = parsed.hostname
+            if not hostname:
+                raise HTTPException(status_code=400, detail="Invalid URL")
+            
+            # Block localhost and loopback addresses
+            if hostname.lower() in ('localhost', '127.0.0.1', '::1', '0.0.0.0'):
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Cannot download from localhost"
+                )
+            
+            # Block private IP ranges (basic check)
+            if hostname.startswith(('10.', '172.16.', '172.17.', '172.18.', 
+                                   '172.19.', '172.20.', '172.21.', '172.22.',
+                                   '172.23.', '172.24.', '172.25.', '172.26.',
+                                   '172.27.', '172.28.', '172.29.', '172.30.',
+                                   '172.31.', '192.168.')):
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Cannot download from private IP addresses"
+                )
+            
+            # Block link-local addresses
+            if hostname.startswith('169.254.'):
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Cannot download from link-local addresses"
+                )
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid URL: {str(e)}")
+    
     async def download_file(self, url: str) -> GRIBFileInfo:
         """
         Download a GRIB file from a URL.
@@ -95,6 +151,9 @@ class GRIBService:
         Returns:
             GRIBFileInfo object
         """
+        # Validate URL to prevent SSRF
+        self._validate_url(url)
+        
         # Generate unique ID for the file
         file_id = str(uuid.uuid4())
         
@@ -102,10 +161,10 @@ class GRIBService:
         filename = Path(url).name or f"{file_id}.grib"
         ext = Path(filename).suffix or ".grib"
         
-        # Download file
+        # Download file with timeout to prevent hanging
         file_path = self.storage_path / f"{file_id}{ext}"
         
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         
         async with aiofiles.open(file_path, 'wb') as f:

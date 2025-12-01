@@ -19,7 +19,36 @@
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Tab Navigation -->
+      <div class="mb-6 border-b border-gray-200">
+        <nav class="flex space-x-8">
+          <button
+            @click="activeTab = 'browse'"
+            :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'browse'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Browse Files
+          </button>
+          <button
+            @click="activeTab = 'download'"
+            :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'download'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Download GRIB Data
+          </button>
+        </nav>
+      </div>
+
+      <!-- Browse Tab -->
+      <div v-if="activeTab === 'browse'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Left Column: Upload and File List -->
         <div class="space-y-6">
           <FileUpload @uploaded="handleFileUploaded" />
@@ -30,6 +59,11 @@
         <div class="lg:sticky lg:top-8 lg:self-start">
           <GribViewer :fileId="selectedFileId" @close="selectedFileId = null" />
         </div>
+      </div>
+
+      <!-- Download Tab -->
+      <div v-if="activeTab === 'download'">
+        <GribDownloader @downloaded="handleFileDownloaded" />
       </div>
     </main>
 
@@ -48,9 +82,18 @@
 <script setup lang="ts">
 const selectedFileId = ref<string | null>(null)
 const fileListRef = ref<any>(null)
+const activeTab = ref('browse')
 
 const handleFileUploaded = () => {
   // Refresh the file list when a new file is uploaded
+  if (fileListRef.value) {
+    fileListRef.value.loadFiles()
+  }
+}
+
+const handleFileDownloaded = () => {
+  // Switch to browse tab and refresh file list
+  activeTab.value = 'browse'
   if (fileListRef.value) {
     fileListRef.value.loadFiles()
   }
