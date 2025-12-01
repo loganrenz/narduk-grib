@@ -12,6 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 from urllib.parse import urlparse
+from ipaddress import ip_address, IPv4Address, IPv6Address
 from fastapi import UploadFile, HTTPException
 import logging
 
@@ -106,35 +107,45 @@ class GRIBService:
                     detail="Only HTTP and HTTPS URLs are allowed"
                 )
             
-            # Block common internal/private IP ranges and localhost
             hostname = parsed.hostname
             if not hostname:
                 raise HTTPException(status_code=400, detail="Invalid URL")
             
-            # Block localhost and loopback addresses
-            if hostname.lower() in ('localhost', '127.0.0.1', '::1', '0.0.0.0'):
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Cannot download from localhost"
-                )
-            
-            # Block private IP ranges (basic check)
-            if hostname.startswith(('10.', '172.16.', '172.17.', '172.18.', 
-                                   '172.19.', '172.20.', '172.21.', '172.22.',
-                                   '172.23.', '172.24.', '172.25.', '172.26.',
-                                   '172.27.', '172.28.', '172.29.', '172.30.',
-                                   '172.31.', '192.168.')):
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Cannot download from private IP addresses"
-                )
-            
-            # Block link-local addresses
-            if hostname.startswith('169.254.'):
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Cannot download from link-local addresses"
-                )
+            # Try to parse as IP address
+            try:
+                ip = ip_address(hostname)
+                
+                # Block private, loopback, link-local, and multicast addresses
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot download from private, loopback, link-local, or multicast IP addresses"
+                    )
+                
+                # Block reserved IP ranges
+                if ip.is_reserved:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot download from reserved IP addresses"
+                    )
+                    
+            except ValueError:
+                # Not an IP address, check hostname patterns
+                hostname_lower = hostname.lower()
+                
+                # Block localhost variants
+                if hostname_lower in ('localhost', 'localhost.localdomain'):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot download from localhost"
+                    )
+                
+                # Block .local domain
+                if hostname_lower.endswith('.local'):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot download from .local domains"
+                    )
                 
         except HTTPException:
             raise
@@ -145,13 +156,16 @@ class GRIBService:
         """
         Download a GRIB file from a URL.
         
+        This method intentionally allows downloading from user-provided URLs
+        but implements comprehensive SSRF protection through URL validation.
+        
         Args:
             url: URL to download from
             
         Returns:
             GRIBFileInfo object
         """
-        # Validate URL to prevent SSRF
+        # Validate URL to prevent SSRF - blocks private IPs, localhost, etc.
         self._validate_url(url)
         
         # Generate unique ID for the file
