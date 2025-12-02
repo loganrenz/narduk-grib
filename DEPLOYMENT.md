@@ -66,8 +66,11 @@ Coolify is a self-hosted PaaS platform that automatically handles port assignmen
 ### Prerequisites
 - A Coolify instance running
 - Git repository access
+- DNS records configured in Cloudflare (for separate frontend/backend URLs)
 
-### Steps
+### Option 1: Single Service (Root Dockerfile)
+
+For a simple deployment where frontend and backend are served together:
 
 1. **Connect your repository to Coolify:**
    - In Coolify, create a new application
@@ -84,26 +87,75 @@ Coolify is a self-hosted PaaS platform that automatically handles port assignmen
    GRIB_STORAGE_PATH=/app/grib_files
    ALLOWED_ORIGINS=*
    ```
-   - `ALLOWED_ORIGINS=*` allows all origins (recommended when frontend and backend are served together)
-   - Or set specific origins if needed
 
-4. **Deploy:**
-   - Coolify will automatically:
-     - Build the Docker image using the root Dockerfile
-     - Assign a port and set the `PORT` environment variable
-     - Set up SSL certificates (if configured)
-     - Create a reverse proxy
-
-5. **Access your application:**
-   - Coolify will provide you with a URL
-   - The application will be accessible at that URL
+4. **Deploy and access:**
+   - Coolify will automatically build, assign ports, set up SSL, and create a reverse proxy
+   - Access the application at the URL Coolify provides
    - API documentation will be available at `/docs`
 
+### Option 2: Docker Compose with Separate Frontend/Backend URLs (Recommended)
+
+For production deployments with separate domains for frontend and backend:
+
+#### Setup in Cloudflare
+
+1. Create two DNS records:
+   - `A` record for frontend: `grib-viewer.yourdomain.com` → Your Coolify server IP
+   - `A` record for backend: `api-grib.yourdomain.com` → Your Coolify server IP
+   - Or use `CNAME` records if using Cloudflare proxy
+
+#### Setup in Coolify
+
+1. **Create Docker Compose Application:**
+   - In Coolify, create a new application
+   - Connect your Git repository
+   - Select "Docker Compose" as the build method
+   - **Docker Compose File:** `docker-compose.yml`
+
+2. **Create Backend Service:**
+   - Coolify will detect the `backend` service from docker-compose.yml
+   - Configure the domain: `api-grib.yourdomain.com`
+   - Set up SSL certificate (Coolify can do this automatically)
+
+3. **Create Frontend Service:**
+   - Coolify will detect the `frontend` service from docker-compose.yml
+   - Configure the domain: `grib-viewer.yourdomain.com`
+   - Set up SSL certificate (Coolify can do this automatically)
+
+4. **Set Environment Variables in Coolify:**
+
+   For the **backend** service, set:
+   ```
+   FRONTEND_URL=https://grib-viewer.yourdomain.com
+   GRIB_STORAGE_PATH=/app/grib_files
+   ```
+
+   For the **frontend** service, set:
+   ```
+   BACKEND_URL=https://api-grib.yourdomain.com
+   ```
+
+   **Important:** These environment variables must be set in Coolify's environment variables section. They will be:
+   - Used at build time for the frontend (to configure the API base URL)
+   - Used at runtime for the backend (to configure CORS)
+
+5. **Deploy:**
+   - Coolify will build both services
+   - Assign ports automatically
+   - Set up SSL certificates for both domains
+   - Create reverse proxies
+
+6. **Access your application:**
+   - Frontend: `https://grib-viewer.yourdomain.com`
+   - Backend API: `https://api-grib.yourdomain.com`
+   - API Documentation: `https://api-grib.yourdomain.com/docs`
+
 ### Notes
-- The root `Dockerfile` serves both frontend and backend together (frontend is built as static files)
-- No need to configure port mappings - Coolify handles this automatically
-- The application listens on whatever port Coolify assigns via the `PORT` environment variable
-- For persistent storage of GRIB files, configure a volume mount in Coolify pointing to `/app/grib_files`
+- **Port mappings:** Removed from docker-compose.yml - Coolify handles this automatically
+- **Environment variables:** `BACKEND_URL` and `FRONTEND_URL` must be set in Coolify (not in docker-compose.yml)
+- **Build time vs Runtime:** `BACKEND_URL` is used at build time for frontend, `FRONTEND_URL` is used at runtime for backend CORS
+- **Persistent storage:** Configure volume mounts in Coolify for `/app/grib_files` in the backend service
+- **SSL:** Coolify can automatically provision SSL certificates via Let's Encrypt
 
 ## Manual Deployment
 

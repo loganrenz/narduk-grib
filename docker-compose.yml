@@ -11,7 +11,9 @@ services:
       - HOST=0.0.0.0
       - PORT=${PORT:-8000}
       - GRIB_STORAGE_PATH=/app/grib_files
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+      # Set FRONTEND_URL in Coolify (e.g., https://grib-viewer.example.com)
+      # For local dev, defaults to http://localhost:3000
+      - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000,http://localhost:3001}
     volumes:
       - grib_data:/app/grib_files
     restart: unless-stopped
@@ -20,10 +22,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Set BACKEND_URL in Coolify (e.g., https://api-grib.example.com)
+        # For local dev, defaults to http://localhost:8000
+        # This is used at build time to configure the API base URL
+        BUILD_ARG_API_BASE: ${BACKEND_URL:-http://localhost:8000}
     # Ports are managed by Coolify automatically - no need to expose here
     # For local development, uncomment: ports: - "3000:3000"
-    environment:
-      - NUXT_PUBLIC_API_BASE=http://localhost:8000
     depends_on:
       - backend
     restart: unless-stopped
