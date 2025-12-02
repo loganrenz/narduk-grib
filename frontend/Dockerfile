@@ -35,6 +35,10 @@ EXPOSE 3000
 
 # Set environment to production
 ENV NODE_ENV=production
+# Force port 3000 (Coolify may set PORT env var, but Nuxt server should use 3000)
+ENV PORT=3000
+ENV NITRO_PORT=3000
+ENV NITRO_HOST=0.0.0.0
 
 # Run the application
 CMD ["node", ".output/server/index.mjs"]
