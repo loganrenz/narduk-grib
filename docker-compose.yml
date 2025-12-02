@@ -19,12 +19,8 @@ services:
       - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000,http://localhost:3001}
     volumes:
       - grib_data:/app/grib_files
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # Health checks are configured in Coolify UI
+    # Backend health endpoint: /health
     restart: unless-stopped
 
   frontend:
@@ -41,15 +37,10 @@ services:
       - "3000"
     # Ports are managed by Coolify automatically - no need to expose here
     # For local development, uncomment: ports: - "3000:3000"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # Health checks are configured in Coolify UI
+    # Frontend health endpoint: / (root path)
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
 
 volumes:
