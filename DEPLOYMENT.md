@@ -5,9 +5,10 @@ This guide covers different deployment options for the GRIB Viewer application.
 ## Table of Contents
 
 1. [Docker Deployment](#docker-deployment)
-2. [Manual Deployment](#manual-deployment)
-3. [Cloud Deployment](#cloud-deployment)
-4. [Configuration](#configuration)
+2. [Coolify Deployment](#coolify-deployment)
+3. [Manual Deployment](#manual-deployment)
+4. [Cloud Deployment](#cloud-deployment)
+5. [Configuration](#configuration)
 
 ## Docker Deployment
 
@@ -57,6 +58,52 @@ Edit `docker-compose.yml` to customize:
 - Port mappings
 - Environment variables
 - Volume mounts
+
+## Coolify Deployment
+
+Coolify is a self-hosted PaaS platform that automatically handles port assignment, SSL certificates, and reverse proxying.
+
+### Prerequisites
+- A Coolify instance running
+- Git repository access
+
+### Steps
+
+1. **Connect your repository to Coolify:**
+   - In Coolify, create a new application
+   - Connect your Git repository
+   - Select "Dockerfile" as the build method
+
+2. **Configure the application:**
+   - **Dockerfile Path:** Use the root `Dockerfile` (not the backend one)
+   - **Port:** Coolify will automatically assign a port and set the `PORT` environment variable
+   - The application is configured to use the `PORT` env var automatically
+
+3. **Set Environment Variables (optional):**
+   ```
+   GRIB_STORAGE_PATH=/app/grib_files
+   ALLOWED_ORIGINS=*
+   ```
+   - `ALLOWED_ORIGINS=*` allows all origins (recommended when frontend and backend are served together)
+   - Or set specific origins if needed
+
+4. **Deploy:**
+   - Coolify will automatically:
+     - Build the Docker image using the root Dockerfile
+     - Assign a port and set the `PORT` environment variable
+     - Set up SSL certificates (if configured)
+     - Create a reverse proxy
+
+5. **Access your application:**
+   - Coolify will provide you with a URL
+   - The application will be accessible at that URL
+   - API documentation will be available at `/docs`
+
+### Notes
+- The root `Dockerfile` serves both frontend and backend together (frontend is built as static files)
+- No need to configure port mappings - Coolify handles this automatically
+- The application listens on whatever port Coolify assigns via the `PORT` environment variable
+- For persistent storage of GRIB files, configure a volume mount in Coolify pointing to `/app/grib_files`
 
 ## Manual Deployment
 

@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     environment:
       - HOST=0.0.0.0
-      - PORT=8000
+      - PORT=${PORT:-8000}
       - GRIB_STORAGE_PATH=/app/grib_files
       - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
     volumes:
