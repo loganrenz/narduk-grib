@@ -3,6 +3,7 @@ Service for managing and processing GRIB files.
 """
 import os
 import uuid
+import re
 import aiofiles
 import requests
 import cfgrib
@@ -11,7 +12,7 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional, Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote, parse_qs
 from ipaddress import ip_address, IPv4Address, IPv6Address
 from fastapi import UploadFile, HTTPException
 import logging
@@ -46,16 +47,26 @@ class GRIBService:
             List of GRIBFileInfo objects
         """
         files = []
-        for file_path in self.storage_path.glob("*.grib*"):
-            stat = file_path.stat()
-            files.append(GRIBFileInfo(
-                id=file_path.stem,
-                filename=file_path.name,
-                size=stat.st_size,
-                uploaded_at=datetime.fromtimestamp(stat.st_ctime),
-                path=str(file_path)
-            ))
-        return sorted(files, key=lambda x: x.uploaded_at, reverse=True)
+        # Check all supported GRIB extensions
+        for ext in self.GRIB_EXTENSIONS:
+            for file_path in self.storage_path.glob(f"*{ext}"):
+                # Skip if already added (in case of duplicate patterns)
+                stat = file_path.stat()
+                files.append(GRIBFileInfo(
+                    id=file_path.stem,
+                    filename=file_path.name,
+                    size=stat.st_size,
+                    uploaded_at=datetime.fromtimestamp(stat.st_ctime),
+                    path=str(file_path)
+                ))
+        # Remove duplicates (in case a file matches multiple patterns)
+        seen_ids = set()
+        unique_files = []
+        for file_info in files:
+            if file_info.id not in seen_ids:
+                seen_ids.add(file_info.id)
+                unique_files.append(file_info)
+        return sorted(unique_files, key=lambda x: x.uploaded_at, reverse=True)
     
     async def upload_file(self, file: UploadFile) -> GRIBFileInfo:
         """
@@ -174,15 +185,55 @@ class GRIBService:
         # Generate unique ID for the file
         file_id = str(uuid.uuid4())
         
-        # Determine filename from URL
-        filename = Path(url).name or f"{file_id}.grib"
-        ext = Path(filename).suffix or ".grib"
-        
         # Download file with timeout to prevent hanging
-        file_path = self.storage_path / f"{file_id}{ext}"
-        
-        response = requests.get(url, stream=True, timeout=30)
+        response = requests.get(url, stream=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0'})
         response.raise_for_status()
+        
+        # Determine filename and extension from URL or Content-Type
+        parsed_url = urlparse(url)
+        
+        # Try to get filename from Content-Disposition header
+        filename = None
+        content_disposition = response.headers.get('Content-Disposition', '')
+        if 'filename=' in content_disposition:
+            match = re.search(r'filename[*]?=([^;]+)', content_disposition)
+            if match:
+                filename = unquote(match.group(1).strip('"\''))
+        
+        # If not in header, try to extract from URL
+        if not filename:
+            url_path = unquote(parsed_url.path)
+            filename = Path(url_path).name if url_path else None
+            # If it's a CGI script, check query params for file parameter
+            if filename and filename.endswith('.pl'):
+                query_params = parse_qs(parsed_url.query)
+                if 'file' in query_params:
+                    filename = query_params['file'][0]
+        
+        # Determine extension
+        if filename:
+            ext = Path(filename).suffix
+            # Validate extension is a supported GRIB extension
+            if ext not in self.GRIB_EXTENSIONS:
+                # Default to .grib2 for GRIB files
+                ext = '.grib2'
+        else:
+            # Check Content-Type to determine extension
+            content_type = response.headers.get('Content-Type', '').lower()
+            if 'grib' in content_type or 'octet-stream' in content_type:
+                ext = '.grib2'
+            else:
+                ext = '.grib2'  # Default for GRIB downloads
+        
+        # Use a reasonable default filename if still not set
+        if not filename:
+            filename = f"grib_download_{file_id}{ext}"
+        
+        # Ensure filename has correct extension
+        if not filename.endswith(ext):
+            filename = f"{Path(filename).stem}{ext}"
+        
+        file_path = self.storage_path / f"{file_id}{ext}"
         
         async with aiofiles.open(file_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
