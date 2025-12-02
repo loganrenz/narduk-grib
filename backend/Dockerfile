@@ -1,9 +1,10 @@
 FROM python:3.11-slim
 
-# Install system dependencies required for ecCodes
+# Install system dependencies required for ecCodes and healthcheck
 RUN apt-get update && apt-get install -y \
     libeccodes-dev \
     libeccodes-tools \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
