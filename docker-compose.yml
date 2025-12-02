@@ -5,8 +5,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    # Ports are managed by Coolify automatically - no need to expose here
+    # For local development, uncomment: ports: - "8000:8000"
     environment:
       - HOST=0.0.0.0
       - PORT=${PORT:-8000}
@@ -20,8 +20,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    # Ports are managed by Coolify automatically - no need to expose here
+    # For local development, uncomment: ports: - "3000:3000"
     environment:
       - NUXT_PUBLIC_API_BASE=http://localhost:8000
     depends_on:
