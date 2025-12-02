@@ -177,9 +177,51 @@ npm run build
 npm run preview
 ```
 
+## Testing
+
+This project includes comprehensive test coverage for GRIB file transformation and downloading. See [TESTING.md](TESTING.md) for detailed information on:
+
+- Running tests
+- Test coverage
+- Supported GRIB models
+- Map provider verification
+- Authentication requirements
+
+Quick start:
+```bash
+cd backend
+pytest  # Run all tests
+pytest -m "not integration"  # Run unit tests only
+```
+
+## Map Provider Support
+
+The frontend supports three map visualization providers:
+
+1. **Leaflet** (Default) - OpenStreetMap, no API key required
+2. **Mapbox** - Requires Mapbox API token
+3. **Apple MapKit JS** - Requires MapKit JS token
+
+Leaflet is configured as the default provider and works out of the box. For Mapbox or MapKit JS:
+
+1. Get your API token from the respective provider
+2. Add to `frontend/.env`:
+   ```
+   NUXT_PUBLIC_MAPBOX_TOKEN=your_token
+   NUXT_PUBLIC_MAPKIT_TOKEN=your_token
+   ```
+3. Select provider from the dropdown in the UI
+
+See [TESTING.md](TESTING.md) for detailed map provider configuration.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+When adding new features:
+- Add appropriate tests (see [TESTING.md](TESTING.md))
+- Update documentation
+- Follow existing code style
 
 ## License
 
